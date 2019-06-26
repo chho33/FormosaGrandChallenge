@@ -8,10 +8,12 @@ from django.contrib import admin
 from django.urls import path, include
 from rest_framework import routers
 
-from .api.views import index_view, MessageViewSet
+from .api.views import index_view, MessageViewSet, UploadView, AnswerView
 
-router = routers.DefaultRouter()
-router.register('messages', MessageViewSet)
+#router = routers.DefaultRouter()
+# now can use api/messages
+#router.register('messages', MessageViewSet)
+#router.register('upload', UploadView)
 
 urlpatterns = [
 
@@ -19,10 +21,12 @@ urlpatterns = [
     path('', index_view, name='index'),
 
     # http://localhost:8000/api/<router-viewsets>
-    path('api/', include(router.urls)),
+    #path('api/', include(router.urls)),
 
     # http://localhost:8000/api/admin/
     path('api/admin/', admin.site.urls),
+    path('upload', UploadView.as_view()),
+    path('answer', AnswerView.as_view()),
 ]
 
 
