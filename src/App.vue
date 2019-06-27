@@ -122,8 +122,10 @@
       <v-flex md1 fill-height>
       </v-flex>
     </v-layout>
-
     </v-container>
+    <div style="visibility: hidden">
+      {{options}}
+    </div>
   </div>
 </template>
 
@@ -137,38 +139,68 @@ export default {
             // https://github.com/simple-uploader/Uploader/tree/develop/samples/Node.js
             target: '//localhost:8000/upload',
             testChunks: false,
+            query: { 
+                    key: this.$cookies.get("csrftoken"),
+                    //fileType: this.$store.state.fileType,
+                    fileType: '',
+                   }
           },
           attrs: {
             accept: 'audio/*'
           },
       }
   },
+  //watch: {
+  //  options: {
+  //    handler(newVal, oldVal) {
+  //    },
+  //    immediate: true,
+  //    deep: true
+  //  }
+  //},
   methods: {
-    display_text(target) {
-      let text_display, uploader
-      if(target == "context") {
-        text_display = this.$refs.context_text
-        uploader = this.$refs.context.uploader
-      } 
-      else if(target == "question") {
-        text_display = this.$refs.question_text
-        uploader = this.$refs.question.uploader
-      } 
-      else if(target == "choices") {
-        text_display = this.$refs.choices_text
-        uploader = this.$refs.choices.uploader
-      } 
+    updateFileType(setType) { 
+      this.options.query.fileType = setType 
+    },
+    display_text(target,fa) {
 
-      uploader.on('change', function (e) { 
+      let text_display, uploader
+      let dictionary = {
+        context: {
+          text_display:this.$refs.context_text,
+          uploader:this.$refs.context.uploader
+        },
+        question: {
+          text_display:this.$refs.question_text,
+          uploader:this.$refs.question.uploader
+        },
+        choices: {
+          text_display:this.$refs.choices_text,
+          uploader:this.$refs.choices.uploader
+        },
+         
+      }
+      text_display = dictionary[target]["text_display"]
+      uploader = dictionary[target]["uploader"]
+
+      uploader.on('change', function () { 
         text_display.$refs["input-slot"].style.height = "150px"
       })
+      uploader.on('fileAdded', function(file, event){
+                   fa.updateFileType(target)
+                 })
       uploader.on('fileSuccess', function (rootFile, file, message) { 
         message = JSON.parse(message)
-        if (typeof text_display.value !== "undefined"){
-          text_display.value += message["result"] 
-        }
-        else {
-          text_display.value = message["result"] 
+        let fileType,m
+        for(m of message) {
+          fileType = m["fileType"] 
+          text_display = dictionary[fileType]["text_display"]
+          if (typeof text_display.value !== "undefined"){
+            text_display.value += m["result"] 
+          }
+          else {
+            text_display.value = m["result"] 
+          }
         }
       })
     },
@@ -191,9 +223,9 @@ export default {
     },
   },
   mounted() {
-    this.display_text("context")
-    this.display_text("question")
-    this.display_text("choices")
+    this.display_text("context",this)
+    this.display_text("question",this)
+    this.display_text("choices",this)
   }
 }
 </script>
