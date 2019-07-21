@@ -23,20 +23,25 @@ Vue.use(Vuex)
 
 const store = new Vuex.Store({
   state: {
-    fileType: ''
+    fileType: '',
+    context: '',
+    question: '',
+    choices: '',
+    answer: '',
+  },
+  getters: {
   },
   mutations: {
-    updateFileType (state, setType) { state.fileType = setType}
+    updateFileType (state, setType) { state.fileType = setType },
+    fillText (state, payload) { state[payload.tabType] = payload.text },
   }
 });
 
 const vue = new Vue({
+  el: '#app',
   router,
   store,
-  computed: mapState([
-    'fileType'
-  ]),
   render: h => h(App)
 })
 
-vue.$mount('#app')
+//vue.$mount('#app')

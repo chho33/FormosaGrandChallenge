@@ -20,6 +20,7 @@
         <v-textarea
           ref="context_text"
           label="context"
+          v-model="context_text"
           auto-grow
           outline
           box
@@ -47,8 +48,9 @@
       </v-flex>
       <v-flex md5 fill-height>
         <v-textarea
-          label="question"
           ref="question_text"
+          label="question"
+          v-model="question_text"
           outline
           auto-grow
           box
@@ -76,8 +78,9 @@
       </v-flex>
       <v-flex md5 fill-height>
         <v-textarea
-          label="choices"
           ref="choices_text"
+          label="choices"
+          v-model="choices_text"
           outline
           auto-grow
           box
@@ -95,8 +98,9 @@
       </v-flex>
       <v-flex md10 fill-height>
         <v-textarea
-          label="answer"
           ref="answer_text"
+          label="answer"
+          v-model="answer_text"
           outline
           auto-grow
           box
@@ -141,8 +145,7 @@ export default {
             testChunks: false,
             query: { 
                     key: this.$cookies.get("csrftoken"),
-                    //fileType: this.$store.state.fileType,
-                    fileType: '',
+                    fileType: this.$store.state.fileType,
                    }
           },
           attrs: {
@@ -158,57 +161,52 @@ export default {
   //    deep: true
   //  }
   //},
-  methods: {
-    updateFileType(setType) { 
-      this.options.query.fileType = setType 
+  computed: {
+    context_text() {
+      return this.$store.state.context
     },
-    display_text(target,fa) {
+    question_text() {
+      return this.$store.state.question
+    },
+    choices_text() {
+      return this.$store.state.choices
+    },
+    answer_text() {
+      return this.$store.state.answer
+    },
+  },
+  methods: {
+    display_text(target,dictionary) {
 
-      let text_display, uploader
-      let dictionary = {
-        context: {
-          text_display:this.$refs.context_text,
-          uploader:this.$refs.context.uploader
-        },
-        question: {
-          text_display:this.$refs.question_text,
-          uploader:this.$refs.question.uploader
-        },
-        choices: {
-          text_display:this.$refs.choices_text,
-          uploader:this.$refs.choices.uploader
-        },
-         
-      }
-      text_display = dictionary[target]["text_display"]
+      let text_target, uploader, fileType, data
+      text_target = dictionary[target]["text_target"]
       uploader = dictionary[target]["uploader"]
+      const that = this
 
-      uploader.on('change', function () { 
-        text_display.$refs["input-slot"].style.height = "150px"
+      uploader.on('change', function (e) { 
+        text_target.$refs["input-slot"].style.height = "150px"
+        that.options.query.fileType = e.target.parentNode.parentNode.parentNode.id
       })
       uploader.on('fileAdded', function(file, event){
-                   fa.updateFileType(target)
                  })
       uploader.on('fileSuccess', function (rootFile, file, message) { 
         message = JSON.parse(message)
-        let fileType,m
+        let m
         for(m of message) {
-          fileType = m["fileType"] 
-          text_display = dictionary[fileType]["text_display"]
-          if (typeof text_display.value !== "undefined"){
-            text_display.value += m["result"] 
-          }
-          else {
-            text_display.value = m["result"] 
-          }
+          that.$store.commit({
+            type: "fillText",
+            tabType: target,
+            text: m["result"]
+          })
         }
       })
     },
     get_answer(){
-        const context_text = this.$refs.context_text.value
-        const question_text = this.$refs.question_text.value
-        const choices_text = this.$refs.choices_text.value
-        let answer_text = this.$refs.answer_text
+
+        const context_text = this.$store.state.context
+        const question_text = this.$store.state.question
+        const choices_text = this.$store.state.choices
+        let answer_text = this.$store.state.answer
 
         axios
           .post('//localhost:8000/answer',{
@@ -217,15 +215,30 @@ export default {
             "choices_text":choices_text
           })
           .then(response => { 
-              answer_text.value = response["data"]["result"]
+              answer_text = response["data"]["result"]
             }
           )
     },
   },
   mounted() {
-    this.display_text("context",this)
-    this.display_text("question",this)
-    this.display_text("choices",this)
+    const dictionary = {
+      context: {
+        text_target:this.$refs.context_text,
+        uploader:this.$refs.context.uploader
+      },
+      question: {
+        text_target:this.$refs.question_text,
+        uploader:this.$refs.question.uploader
+      },
+      choices: {
+        text_target:this.$refs.choices_text,
+        uploader:this.$refs.choices.uploader
+      },
+       
+    }
+    this.display_text("context",dictionary)
+    this.display_text("question",dictionary)
+    this.display_text("choices",dictionary)
   }
 }
 </script>
