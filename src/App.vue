@@ -127,9 +127,6 @@
       </v-flex>
     </v-layout>
     </v-container>
-    <div style="visibility: hidden">
-      {{options}}
-    </div>
   </div>
 </template>
 
@@ -178,7 +175,7 @@ export default {
   methods: {
     display_text(target,dictionary) {
 
-      let text_target, uploader, fileType, data
+      let text_target, uploader
       text_target = dictionary[target]["text_target"]
       uploader = dictionary[target]["uploader"]
       const that = this
@@ -187,15 +184,16 @@ export default {
         text_target.$refs["input-slot"].style.height = "150px"
         that.options.query.fileType = e.target.parentNode.parentNode.parentNode.id
       })
-      uploader.on('fileAdded', function(file, event){
-                 })
+      //uploader.on('fileAdded', function(file, event){
+      //           })
       uploader.on('fileSuccess', function (rootFile, file, message) { 
         message = JSON.parse(message)
         let m
         for(m of message) {
+          console.log("m: ",m)
           that.$store.commit({
             type: "fillText",
-            tabType: target,
+            tabType: m["fileType"],
             text: m["result"]
           })
         }
@@ -206,7 +204,6 @@ export default {
         const context_text = this.$store.state.context
         const question_text = this.$store.state.question
         const choices_text = this.$store.state.choices
-        let answer_text = this.$store.state.answer
 
         axios
           .post('//localhost:8000/answer',{
@@ -215,7 +212,11 @@ export default {
             "choices_text":choices_text
           })
           .then(response => { 
-              answer_text = response["data"]["result"]
+              this.$store.commit({
+                type: "fillText",
+                tabType: "answer",
+                text: response["data"]["result"]
+              })
             }
           )
     },
