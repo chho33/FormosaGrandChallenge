@@ -1,8 +1,9 @@
 <template>
   <div id="app">
     <!--<h1 v-on:click="test">科技大擂台</h1>-->
-    <h1 ref="h1">科技大擂台成果展示</h1>
-    <v-container align-center>
+    <!--<h1 ref="h1">科技大擂台成果展示</h1>-->
+    <img src='@/assets/header.png' style="width: 936px" class="ml-2"/>
+    <v-container align-center class="mt-3">
     <v-layout row wrap fill-height height="160px" d-flex>
       <v-flex md1 fill-height>
       </v-flex>
@@ -93,10 +94,10 @@
       </v-flex>
     </v-layout>
 
-    <v-layout align-center fluid>
-      <v-flex md2 fill-height>
+    <v-layout justify-center align-center>
+      <v-flex class="mr-0" md1 fill-height>
       </v-flex>
-      <v-flex md10 fill-height>
+      <v-flex class="ml-4 mt-0" md10 fill-height>
         <v-textarea
           ref="answer_text"
           label="answer"
@@ -109,19 +110,13 @@
           class="pa-0 ma-0"
         ></v-textarea>
       </v-flex>
-      <v-flex md1 fill-height>
-        <v-fab-transition>
-        <v-btn
-          dark
-          fab
-          top
-          right
-          color="pink"
-          @click="get_answer"
-        >
-          ANS 
-        </v-btn>
-        </v-fab-transition>
+      <v-flex  fill-height>
+        <div class="mb-0 mr-1">
+            <v-btn dark medium color="pink" @click="get_answer">Answer</v-btn>
+        </div>
+        <div class="mb-4 mr-1">
+            <v-btn medium color="white" @click="reset">Reset</v-btn>
+        </div>
       </v-flex>
       <v-flex md1 fill-height>
       </v-flex>
@@ -138,7 +133,7 @@ export default {
       return {
           options: {
             // https://github.com/simple-uploader/Uploader/tree/develop/samples/Node.js
-            target: '//localhost:8000/upload',
+            target: '//'.concat(this.$store.state.host,':8000/upload'),
             testChunks: false,
             query: { 
                     key: this.$cookies.get("csrftoken"),
@@ -190,7 +185,6 @@ export default {
         message = JSON.parse(message)
         let m
         for(m of message) {
-          console.log("m: ",m)
           that.$store.commit({
             type: "fillText",
             tabType: m["fileType"],
@@ -206,7 +200,7 @@ export default {
         const choices_text = this.$store.state.choices
 
         axios
-          .post('//localhost:8000/answer',{
+          .post('//'.concat(this.$store.state.host,':8000/answer'),{
             "context_text":context_text,
             "question_text":question_text,
             "choices_text":choices_text
@@ -220,6 +214,22 @@ export default {
             }
           )
     },
+    reset(){
+        let t 
+        for(t of ["context","question","choices","answer"]) {
+            this.$store.commit({
+              type: "fillText",
+              tabType: t,
+              text: "" 
+            })
+        }
+        this.$refs.context_text.$refs["input-slot"].style.height = "100px"
+        this.$refs.question_text.$refs["input-slot"].style.height = "100px"
+        this.$refs.choices_text.$refs["input-slot"].style.height = "100px"
+        this.$refs.context.uploader.cancel()
+        this.$refs.question.uploader.cancel()
+        this.$refs.choices.uploader.cancel()
+    }
   },
   mounted() {
     const dictionary = {

@@ -11,6 +11,8 @@ import App from '@/App.vue'
 
 //import store from '@/store' 
 import router from '@/router'
+import * as CONFIG from './config.json'
+const host = CONFIG.host
 
 VueCookies.config('1d')
 Vue.config.productionTip = false
@@ -28,6 +30,7 @@ const store = new Vuex.Store({
     question: '',
     choices: '',
     answer: '',
+    host: host,
   },
   getters: {
   },

@@ -9,7 +9,16 @@ djangorestframework = "*"
 gunicorn = "*"
 whitenoise = "==4.0"
 dj-database-url = "*"
-psycopg2-binary = "*"
+redis = "*"
+django-cors-headers = "*"
+pipfile = "*"
+SpeechRecognition = "*"
+editdistance = "*"
+joblib = "*"
+tqdm = "*"
+ipython = "*"
+pytorch-transformers = {editable = true,git = "https://github.com/huggingface/pytorch-transformers.git",ref = "47a7d4ec14"}
+pandas = "*"
 
 [dev-packages]
 

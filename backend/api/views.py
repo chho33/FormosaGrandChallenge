@@ -7,22 +7,27 @@ from rest_framework.views import APIView
 
 from .models import Message, MessageSerializer
 
-#from ailabs_asr import KgbAsrDecoder
-#from asr_settings import asr_base_dir
+from .ailabs_asr import KgbAsrDecoder
+from .asr_settings import asr_base_dir, KALDI_ROOT
+from .bert import BertClass
 
+import torch
 import shutil
+import numpy as np
 import os
+import re
 from time import sleep
 import pathlib
 import json
-import redis
-import speech_recognition as sr
-recog = sr.Recognizer()
+from copy import deepcopy
+#import redis
+#import speech_recognition as sr
+#recog = sr.Recognizer()
 
 # redis
-redis_host = "localhost"
-redis_port = 6379
-redis_db = 0
+#redis_host = "localhost"
+#redis_port = 6379
+#redis_db = 0
 
 # wav types
 wav_files = ["context.wav","question.wav","choices.wav"]
@@ -31,33 +36,27 @@ wav_files = ["context.wav","question.wav","choices.wav"]
 index_view = never_cache(TemplateView.as_view(template_name='index.html'))
 
 # Set asr decoder
-#decoder_dir = pathlib.PurePosixPath(asr_base_dir).joinpath('ailabs_asr/nnet3_adapt')
-#decoder = KgbAsrDecoder(decoder_dir=decoder_dir)
+decoder_dir = pathlib.PurePosixPath(asr_base_dir).joinpath('ailabs_asr/nnet3_adapt')
+decoder = KgbAsrDecoder(decoder_dir=decoder_dir, KALDI_ROOT=KALDI_ROOT, base_dir=asr_base_dir)
 
-def asr_passage(passage_path):
-    passage = decoder.decode(passage_path,False)
-    return passage
+# Set bert for qa task
+bert_dir = os.path.join(asr_base_dir,'bert/bert_model')
+bert_1 = BertClass(model_dir=os.path.join(bert_dir,'m33k_model'))
+bert_2 = BertClass(model_dir=os.path.join(bert_dir,'m33k_model2'))
+bert_3 = BertClass(model_dir=os.path.join(bert_dir,'all_model'))
+bert_4 = BertClass(model_dir=os.path.join(bert_dir,'all_model2'))
 
-def asr_question_choices(passage, question_path, choices_path):
-    fd, new_fst = decoder.make_adapt_fst(passage)
-    if new_fst is None:
-        question = decoder.decode(question_path, False)
-        choices = decoder.decode(choices_path, True)
-    else:
-        question = decoder.decode(question_path, False, new_fst)
-        choices = decoder.decode(choices_path, True, new_fst)
-        os.close(fd)
-        os.remove(new_fst)
-    return question, choices
+# Set device
+device =  torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def asr_passage(passage_path):
+def asr_passage_google(passage_path):
     with sr.AudioFile(passage_path) as source:
         speech = recog.record(source)
         #speech = sr.AudioData(speech, 16000, 2)
         result = recog.recognize_google(speech,language='zh-tw')
     return result 
 
-def asr_question_choices(passage, question_path, choices_path):
+def asr_question_choices_google(passage, question_path, choices_path):
     with sr.AudioFile(question_path) as source:
         speech = recog.record(source)
         #speech = sr.AudioData(speech, 16000, 2)
@@ -80,6 +79,32 @@ def check_audios_rd(rd,key,audio):
     else:
         rd.lpush(key,audio)
 
+def asr_passage(passage_path):
+    passage = decoder.decode(passage_path,False)
+    passage = passage.replace(' ', '')
+    return passage
+
+def asr_question_choices(passage, question_path, choices_path):
+    fd, new_fst = decoder.make_adapt_fst(passage)
+    if new_fst is None:
+        question = decoder.decode(question_path, False)
+        choices = decoder.decode(choices_path, True)
+    else:
+        question = decoder.decode(question_path, False, new_fst)
+        choices = decoder.decode(choices_path, True, new_fst)
+        os.close(fd)
+        os.remove(new_fst)
+    question = question.replace(' ', '')
+    choices = choices.replace(' ', '')
+    try:
+        choices = decoder.choice_parser.parse_choice(choices)
+    except Exception as e:
+        print(e)
+        choices = ["", "", "", ""]
+    choices = ["%s. %s\n"%(i+1,c) for i,c in enumerate(choices)]
+    choices = "".join(choices)
+    return question, choices
+
 def check_audios(wav_dir):
     if_finish = True
     for wav in wav_files: 
@@ -88,6 +113,37 @@ def check_audios(wav_dir):
     context_txt = pathlib.Path(wav_dir) / "context.txt"
     if_finish *= context_txt.exists()
     return if_finish
+
+def answer_qa(data):
+    predict = np.zeros((1, 4))
+    try:
+        predict += np.array(bert_1.predict(data.copy(), batch_size=len(data), use_device=device))
+        print('bert1 done')
+    except:
+        print("error3")     
+    try:
+        predict += np.array(bert_2.predict(data.copy(), batch_size=len(data), use_device=device))
+        print('bert2 done')
+    except:
+        print("error4")
+    try:
+        predict += np.array(bert_3.predict(data.copy(), batch_size=len(data), use_device=device))
+        print('bert3 done')
+    except:
+        print("error5")
+    try:
+        predict += np.array(bert_4.predict(data.copy(), batch_size=len(data), use_device=device))
+        print('bert4 done')
+    except:
+        print("error6")
+    predict_index = (np.argmax(predict, axis=1))[0]
+    answer = "%s. %s"%(predict_index+1,data[0][-1][predict_index])
+    return answer
+
+def choices_to_list(choices):
+    choices = re.split("\n",choices)[:4]
+    choices = list(map(lambda x:re.sub("\d\. ","",x) , choices))
+    return choices
 
 class MessageViewSet(viewsets.ModelViewSet):
     """
@@ -138,6 +194,7 @@ class UploadView(APIView):
                              {"fileType":"choices", "result":c_result},
             ]) 
 
+
 class AnswerView(APIView):
 
     def post(self, request):
@@ -145,5 +202,8 @@ class AnswerView(APIView):
         context_text = data["context_text"]
         question_text = data["question_text"]
         choices_text = data["choices_text"]
-        result = "%s %s %s "%(context_text,question_text,choices_text)
-        return Response({"result":result}) 
+        choices_text = choices_to_list(choices_text)
+        data = [(context_text,question_text,choices_text)]
+        answer = answer_qa(data)
+        return Response({"fileType":"answer", "result":answer}) 
+
