@@ -5,7 +5,7 @@ import 'vuetify/src/stylus/app.styl'
 import uploader from 'vue-simple-uploader'
 import VueCookies from 'vue-cookies'
 import Vuex from 'vuex'
-import { mapState } from 'vuex'
+//import { mapState } from 'vuex'
 
 import App from '@/App.vue'
 
@@ -13,6 +13,7 @@ import App from '@/App.vue'
 import router from '@/router'
 import * as CONFIG from './config.json'
 const host = CONFIG.host
+const port = CONFIG.port
 
 VueCookies.config('1d')
 Vue.config.productionTip = false
@@ -31,6 +32,7 @@ const store = new Vuex.Store({
     choices: '',
     answer: '',
     host: host,
+    port: port,
   },
   getters: {
   },
@@ -40,7 +42,8 @@ const store = new Vuex.Store({
   }
 });
 
-const vue = new Vue({
+//const vue = new Vue({
+new Vue({
   el: '#app',
   router,
   store,

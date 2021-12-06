@@ -133,7 +133,7 @@ export default {
       return {
           options: {
             // https://github.com/simple-uploader/Uploader/tree/develop/samples/Node.js
-            target: '//'.concat(this.$store.state.host,':8000/upload'),
+            target: "http://" + this.$store.state.host + ':' + this.$store.state.port + '/upload',
             testChunks: false,
             query: { 
                     key: this.$cookies.get("csrftoken"),
@@ -200,7 +200,7 @@ export default {
         const choices_text = this.$store.state.choices
 
         axios
-          .post('//'.concat(this.$store.state.host,':8000/answer'),{
+          .post("http://" + this.$store.state.host + ":" + this.$store.state.port + '/upload',{
             "context_text":context_text,
             "question_text":question_text,
             "choices_text":choices_text
