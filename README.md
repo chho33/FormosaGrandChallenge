@@ -6,3 +6,6 @@
 - run `python manage.py runserver 0.0.0.0`, then the server will run on port 8080.
 - run `yarn serve --host 0.0.0.0` to run the frontend service.
 - option: tasks manager tools such as pm2 is recommended to run the backend and frontend services.
+
+## If ip or port changed
+- set up correct ip or port in `src/config.json`
