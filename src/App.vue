@@ -200,7 +200,7 @@ export default {
         const choices_text = this.$store.state.choices
 
         axios
-          .post("http://" + this.$store.state.host + ":" + this.$store.state.port + '/upload',{
+          .post("http://" + this.$store.state.host + ":" + this.$store.state.port + '/answer',{
             "context_text":context_text,
             "question_text":question_text,
             "choices_text":choices_text
