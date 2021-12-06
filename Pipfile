@@ -4,13 +4,13 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-django = "*"
-djangorestframework = "*"
+django = "2.1"
+djangorestframework = "3.10.0"
 gunicorn = "*"
 whitenoise = "==4.0"
 dj-database-url = "*"
 redis = "*"
-django-cors-headers = "*"
+django-cors-headers = "2.5.3"
 pipfile = "*"
 SpeechRecognition = "*"
 editdistance = "*"
@@ -18,7 +18,7 @@ joblib = "*"
 tqdm = "*"
 ipython = "*"
 pytorch-transformers = {editable = true,git = "https://github.com/huggingface/pytorch-transformers.git",ref = "47a7d4ec14"}
-pandas = "*"
+pandas = "1.0.0"
 
 [dev-packages]
 
